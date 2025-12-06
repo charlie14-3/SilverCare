@@ -46,7 +46,7 @@ function Dashboard() {
   // 2. Fetch Data (Runs every 5 seconds for live updates)
   const fetchNurses = async (ownerId) => {
     try {
-      const res = await axios.get(`http://silvercare-api.onrender.com/api/nurses?ownerId=${ownerId}`);
+      const res = await axios.get(`https://silvercare-api.onrender.com/api/nurses?ownerId=${ownerId}`);
       setNurses(res.data);
     } catch (err) { console.error(err); }
   };
@@ -63,7 +63,7 @@ function Dashboard() {
     e.preventDefault();
     if (!user) return;
     try {
-      await axios.post('http://silvercare-api.onrender.com/api/nurses', {
+      await axios.post('https://silvercare-api.onrender.com/api/nurses', {
         ...formData,
         ownerId: user.uid
       });
@@ -76,7 +76,7 @@ function Dashboard() {
   const handleDelete = async (nurseId) => {
     if (!window.confirm("Delete this nurse?")) return;
     try {
-      await axios.delete(`http://silvercare-api.onrender.com/api/nurses/${nurseId}?ownerId=${user.uid}`);
+      await axios.delete(`https://silvercare-api.onrender.com/api/nurses/${nurseId}?ownerId=${user.uid}`);
       fetchNurses(user.uid);
     } catch (error) { alert("Failed to delete."); }
   };
@@ -243,9 +243,9 @@ function Dashboard() {
                     {/* Show Photo if this log has one */}
                     {log.photoUrl && (
                         <div style={{marginTop:'5px'}}>
-                            <a href={`http://silvercare-api.onrender.com${log.photoUrl}`} target="_blank" rel="noreferrer">
+                            <a href={`https://silvercare-api.onrender.com${log.photoUrl}`} target="_blank" rel="noreferrer">
                                 <img 
-                                    src={`http://silvercare-api.onrender.com${log.photoUrl}`} 
+                                    src={`https://silvercare-api.onrender.com${log.photoUrl}`} 
                                     alt="Selfie" 
                                     style={{width:'100%', borderRadius:'8px', border:'2px solid #333'}}
                                 />
