@@ -3,21 +3,33 @@ import axios from 'axios';
 import { auth } from "../firebaseConfig";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from 'react-router-dom';
-import '../css/dashboard.css';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
+import '../css/dashboard.css';
 
+// Configure API URL (Switch to your Render URL when deploying)
+const API_BASE = "http://localhost:5001";
 
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [nurses, setNurses] = useState([]);
-  const [formData, setFormData] = useState({ name: '', phone: '' });
+  // Added 'dailyRate' for payroll/info
+  const [formData, setFormData] = useState({ name: '', phone: '', dailyRate: '' });
 
   // Search & Modal State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNurse, setSelectedNurse] = useState(null);
+  const [activeTab, setActiveTab] = useState('attendance'); // Controls Tabs (Attendance vs Docs)
   const [selectedDate, setSelectedDate] = useState(new Date());
-  // Calculate Stats
+
+  // Document Upload State
+  const [docFile, setDocFile] = useState(null);
+  const [docName, setDocName] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const navigate = useNavigate();
+
+  // --- STATS LOGIC ---
   const totalStaff = nurses.length;
   const presentToday = nurses.filter(n => {
     if (!n.logs || n.logs.length === 0) return false;
@@ -28,9 +40,8 @@ function Dashboard() {
       lastLog.getFullYear() === today.getFullYear();
   }).length;
   const absentToday = totalStaff - presentToday;
-  const navigate = useNavigate();
 
-  // 1. Auth Check
+  // --- AUTH & FETCH ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -43,10 +54,9 @@ function Dashboard() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // 2. Fetch Data (Runs every 5 seconds for live updates)
   const fetchNurses = async (ownerId) => {
     try {
-      const res = await axios.get(`https://silvercare-api.onrender.com/api/nurses?ownerId=${ownerId}`);
+      const res = await axios.get(`${API_BASE}/api/nurses?ownerId=${ownerId}`);
       setNurses(res.data);
     } catch (err) { console.error(err); }
   };
@@ -58,16 +68,17 @@ function Dashboard() {
     }
   }, [user]);
 
-  // 3. Add Nurse
+  // --- ACTIONS ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
     try {
-      await axios.post('https://silvercare-api.onrender.com/api/nurses', {
+      // Send dailyRate along with name and phone
+      await axios.post(`${API_BASE}/api/nurses`, {
         ...formData,
         ownerId: user.uid
       });
-      setFormData({ name: '', phone: '' });
+      setFormData({ name: '', phone: '', dailyRate: '' });
       fetchNurses(user.uid);
       alert("Nurse added! Ask her to message the Telegram Bot now.");
     } catch (error) { console.error(error); }
@@ -76,11 +87,46 @@ function Dashboard() {
   const handleDelete = async (nurseId) => {
     if (!window.confirm("Delete this nurse?")) return;
     try {
-      await axios.delete(`https://silvercare-api.onrender.com/api/nurses/${nurseId}?ownerId=${user.uid}`);
+      await axios.delete(`${API_BASE}/api/nurses/${nurseId}?ownerId=${user.uid}`);
       fetchNurses(user.uid);
     } catch (error) { alert("Failed to delete."); }
   };
-  // Check if a date has attendance
+
+  // --- DOCUMENT UPLOAD HANDLER ---
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    if (!docFile || !selectedNurse) return;
+
+    const data = new FormData();
+    data.append('file', docFile);
+    data.append('docName', docName || docFile.name);
+
+    setUploading(true);
+    try {
+      await axios.post(`${API_BASE}/api/nurses/${selectedNurse._id}/documents`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      alert("Document Uploaded! ✅");
+
+      // Reset form
+      setDocFile(null);
+      setDocName('');
+
+      // Refresh Data & Update Modal State immediately
+      fetchNurses(user.uid);
+      const res = await axios.get(`${API_BASE}/api/nurses?ownerId=${user.uid}`);
+      const updatedNurse = res.data.find(n => n._id === selectedNurse._id);
+      setSelectedNurse(updatedNurse);
+
+    } catch (error) {
+      console.error(error);
+      alert("Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // --- CALENDAR HELPER ---
   const isPresent = (date) => {
     if (!selectedNurse || !selectedNurse.logs) return false;
     return selectedNurse.logs.some(log => {
@@ -91,21 +137,33 @@ function Dashboard() {
     });
   };
 
-  // Get the specific log for the clicked date
-  const getLogForSelectedDate = () => {
-    if (!selectedNurse || !selectedNurse.logs) return null;
-    return selectedNurse.logs.find(log => {
-      const logDate = new Date(log.time);
-      return logDate.getDate() === selectedDate.getDate() &&
-        logDate.getMonth() === selectedDate.getMonth() &&
-        logDate.getFullYear() === selectedDate.getFullYear();
-    });
-  };
-  // Search Filter
+  // --- FILTER ---
   const filteredNurses = nurses.filter(nurse =>
     nurse.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     nurse.phone.includes(searchQuery)
   );
+
+  // --- DELETE DOC HANDLER ---
+  const handleDeleteDoc = async (docId) => {
+    if (!window.confirm("Are you sure you want to delete this document?")) return;
+
+    try {
+      await axios.delete(`${API_BASE}/api/nurses/${selectedNurse._id}/documents/${docId}`);
+
+      // Update UI immediately
+      fetchNurses(user.uid);
+
+      // Update the modal view
+      setSelectedNurse(prev => ({
+        ...prev,
+        documents: prev.documents.filter(d => d._id !== docId)
+      }));
+
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete document");
+    }
+  };
 
   return (
     <div className="dashboard-container">
@@ -116,34 +174,31 @@ function Dashboard() {
 
       {/* ANALYTICS CARDS */}
       <div className="analytics-container">
-        {/* Card 1: Total Staff */}
         <div className="analytics-card">
           <h3>Total Staff</h3>
           <p className="analytics-value">{totalStaff}</p>
         </div>
-
-        {/* Card 2: Present Today */}
         <div className="analytics-card card-green">
           <h3>Present Today</h3>
           <p className="analytics-value text-green">{presentToday}</p>
         </div>
-
-        {/* Card 3: Absent */}
         <div className="analytics-card card-red">
           <h3>Absent / Inactive</h3>
           <p className="analytics-value text-red">{absentToday}</p>
         </div>
       </div>
 
+      {/* ADD NURSE FORM */}
       <div className="form-card">
         <h3>Add New Staff</h3>
         <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '15px' }}>
-          Step 1: Add Nurse here. <br />
-          Step 2: Ask Nurse to start the Telegram Bot and send her phone number.
+          Step 1: Add Nurse details. <br />
+          Step 2: Ask Nurse to start the Telegram Bot.
         </p>
         <form onSubmit={handleSubmit} className="nurse-form">
           <input className="input-field" placeholder="Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
           <input className="input-field" placeholder="Phone (e.g. 9999999999)" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} required />
+          <input className="input-field" placeholder="Daily Rate (₹)" type="number" value={formData.dailyRate} onChange={e => setFormData({ ...formData, dailyRate: e.target.value })} required />
           <button type="submit" className="add-btn">Add Nurse</button>
         </form>
       </div>
@@ -188,90 +243,184 @@ function Dashboard() {
             )}
 
             <button
-              onClick={() => setSelectedNurse(nurse)}
-              style={{ width: '100%', marginTop: '15px', padding: '10px', background: '#333', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+              onClick={() => { setSelectedNurse(nurse); setActiveTab('attendance'); }}
+              className="view-btn" // Using the new CSS class
             >
-              View Attendance & Photos
+              View Profile
             </button>
           </div>
         ))}
       </div>
 
+      {/* --- MODAL --- */}
       {selectedNurse && (
         <div className="modal-overlay" onClick={() => setSelectedNurse(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <button className="close-modal-btn" onClick={() => setSelectedNurse(null)}>×</button>
 
-            <h2 style={{ marginBottom: '20px' }}>{selectedNurse.name}'s Attendance</h2>
+            <h2 style={{ marginBottom: '10px' }}>{selectedNurse.name}</h2>
 
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              {/* 1. LEFT SIDE: CALENDAR */}
-              <div style={{ flex: 1, minWidth: '300px' }}>
-                <Calendar
-                  onChange={setSelectedDate}
-                  value={selectedDate}
-                  tileClassName={({ date }) => isPresent(date) ? 'present-date' : null}
-                />
-              </div>
-
-              {/* 2. RIGHT SIDE: DETAILS FOR SELECTED DAY */}
-<div style={{flex: 1, background:'#f8f9fa', padding:'20px', borderRadius:'8px', minWidth:'250px', maxHeight:'400px', overflowY:'auto'}}>
-    <h4 style={{margin:'0 0 15px 0', borderBottom:'1px solid #ddd', paddingBottom:'10px'}}>
-        {selectedDate.toDateString()}
-    </h4>
-
-    {/* Get ALL logs for this day, not just the first one */}
-    {selectedNurse.logs.filter(log => {
-        const d = new Date(log.time);
-        return d.getDate() === selectedDate.getDate() &&
-               d.getMonth() === selectedDate.getMonth() &&
-               d.getFullYear() === selectedDate.getFullYear();
-    }).length > 0 ? (
-        <div>
-            {/* Loop through every log found for this day */}
-            {selectedNurse.logs.filter(log => {
-                const d = new Date(log.time);
-                return d.getDate() === selectedDate.getDate() &&
-                       d.getMonth() === selectedDate.getMonth() &&
-                       d.getFullYear() === selectedDate.getFullYear();
-            }).map((log, index) => (
-                <div key={index} style={{marginBottom:'20px', borderBottom:'1px dashed #ccc', paddingBottom:'10px'}}>
-                    <div className="status-active" style={{marginBottom:'5px', fontSize:'0.85rem'}}>
-                        ● Check-in at {new Date(log.time).toLocaleTimeString()}
-                    </div>
-
-                    {/* Show Photo if this log has one */}
-                    {log.photoUrl && (
-                        <div style={{marginTop:'5px'}}>
-                            <a href={`https://silvercare-api.onrender.com${log.photoUrl}`} target="_blank" rel="noreferrer">
-                                <img 
-                                    src={`https://silvercare-api.onrender.com${log.photoUrl}`} 
-                                    alt="Selfie" 
-                                    style={{width:'100%', borderRadius:'8px', border:'2px solid #333'}}
-                                />
-                            </a>
-                        </div>
-                    )}
-
-                    {/* Show Location if this log has one */}
-                    {log.location && (
-                        <div style={{marginTop:'5px'}}>
-                            <a href={`https://www.google.com/maps?q=${log.location}`} target="_blank" rel="noreferrer" style={{display:'block', padding:'8px', background:'#e9ecef', textAlign:'center', borderRadius:'6px', textDecoration:'none', color:'#333', fontWeight:'bold', fontSize:'0.9rem'}}>
-                                📍 View Location
-                            </a>
-                        </div>
-                    )}
-                </div>
-            ))}
-        </div>
-    ) : (
-        <div style={{textAlign:'center', marginTop:'40px', color:'#999'}}>
-            <p style={{fontSize:'2rem', margin:0}}>📅</p>
-            <p>No attendance marked.</p>
-        </div>
-    )}
-</div>
+            {/* TABS HEADER */}
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+              <button
+                onClick={() => setActiveTab('attendance')}
+                style={{
+                  padding: '10px 0', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1rem',
+                  borderBottom: activeTab === 'attendance' ? '3px solid #333' : 'none',
+                  fontWeight: activeTab === 'attendance' ? 'bold' : 'normal',
+                  color: activeTab === 'attendance' ? '#333' : '#999'
+                }}
+              >
+                📅 Attendance
+              </button>
+              <button
+                onClick={() => setActiveTab('docs')}
+                style={{
+                  padding: '10px 0', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1rem',
+                  borderBottom: activeTab === 'docs' ? '3px solid #333' : 'none',
+                  fontWeight: activeTab === 'docs' ? 'bold' : 'normal',
+                  color: activeTab === 'docs' ? '#333' : '#999'
+                }}
+              >
+                📂 Documents
+              </button>
             </div>
+
+            {/* TAB 1: ATTENDANCE (Calendar + Logs) */}
+            {activeTab === 'attendance' && (
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                {/* Left: Calendar */}
+                <div style={{ flex: 1, minWidth: '300px' }}>
+                  <Calendar
+                    onChange={setSelectedDate}
+                    value={selectedDate}
+                    tileClassName={({ date }) => isPresent(date) ? 'present-date' : null}
+                  />
+                </div>
+
+                {/* Right: Log Details (Scrollable list of ALL logs for that day) */}
+                <div style={{ flex: 1, background: '#f8f9fa', padding: '20px', borderRadius: '12px', minWidth: '250px', maxHeight: '400px', overflowY: 'auto' }}>
+                  <h4 style={{ margin: '0 0 15px 0', borderBottom: '1px solid #ddd', paddingBottom: '10px' }}>
+                    {selectedDate.toDateString()}
+                  </h4>
+
+                  {/* Filter logs for selected date */}
+                  {selectedNurse.logs.filter(log => {
+                    const d = new Date(log.time);
+                    return d.getDate() === selectedDate.getDate() &&
+                      d.getMonth() === selectedDate.getMonth() &&
+                      d.getFullYear() === selectedDate.getFullYear();
+                  }).length > 0 ? (
+                    <div>
+                      {selectedNurse.logs.filter(log => {
+                        const d = new Date(log.time);
+                        return d.getDate() === selectedDate.getDate() &&
+                          d.getMonth() === selectedDate.getMonth() &&
+                          d.getFullYear() === selectedDate.getFullYear();
+                      }).map((log, index) => (
+                        <div key={index} style={{ marginBottom: '20px', borderBottom: '1px dashed #ccc', paddingBottom: '10px' }}>
+                          <div className="status-active" style={{ marginBottom: '5px', fontSize: '0.85rem' }}>
+                            ● Check-in at {new Date(log.time).toLocaleTimeString()}
+                          </div>
+
+                          {/* Show Photo */}
+                          {log.photoUrl && (
+                            <div style={{ marginTop: '5px' }}>
+                              <a href={`${API_BASE}${log.photoUrl}`} target="_blank" rel="noreferrer">
+                                <img
+                                  src={`${API_BASE}${log.photoUrl}`}
+                                  alt="Selfie"
+                                  style={{ width: '100%', borderRadius: '8px', border: '2px solid #333' }}
+                                />
+                              </a>
+                            </div>
+                          )}
+
+                          {/* Show Location */}
+                          {log.location && (
+                            <div style={{ marginTop: '5px' }}>
+                              <a href={`https://www.google.com/maps?q=${log.location}`} target="_blank" rel="noreferrer" style={{ display: 'block', padding: '8px', background: '#e9ecef', textAlign: 'center', borderRadius: '6px', textDecoration: 'none', color: '#333', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                📍 View Location
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', marginTop: '40px', color: '#999' }}>
+                      <p style={{ fontSize: '2rem', margin: 0 }}>📅</p>
+                      <p>No attendance marked.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: DOCUMENTS (New Feature) */}
+            {activeTab === 'docs' && (
+              <div>
+                {/* Upload Section */}
+                <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '10px', marginBottom: '20px', border: '1px solid #eee' }}>
+                  <h4 style={{ marginTop: 0 }}>Upload New Document</h4>
+                  <form onSubmit={handleFileUpload} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <input
+                      className="input-field"
+                      type="text"
+                      placeholder="Document Name (e.g. Aadhar)"
+                      value={docName}
+                      onChange={e => setDocName(e.target.value)}
+                      style={{ flex: 1, minWidth: '150px' }}
+                      required
+                    />
+                    <input
+                      type="file"
+                      onChange={e => setDocFile(e.target.files[0])}
+                      style={{ padding: '10px' }}
+                      required
+                    />
+                    <button type="submit" disabled={uploading} style={{ background: '#111', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer' }}>
+                      {uploading ? 'Uploading...' : 'Upload'}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Document List */}
+                <h4 style={{marginBottom:'15px'}}>Saved Documents</h4>
+                    {selectedNurse.documents && selectedNurse.documents.length > 0 ? (
+                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:'15px'}}>
+                            {selectedNurse.documents.map((doc) => (
+                                <div key={doc._id} style={{border:'1px solid #eee', padding:'15px', borderRadius:'10px', textAlign:'center', background:'#fff', boxShadow:'0 2px 5px rgba(0,0,0,0.05)', position:'relative'}}>
+                                    
+                                    {/* DELETE BUTTON (Top Right) */}
+                                    <button 
+                                      onClick={() => handleDeleteDoc(doc._id)}
+                                      style={{
+                                        position: 'absolute', top: '5px', right: '5px',
+                                        background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem'
+                                      }}
+                                      title="Delete Document"
+                                    >
+                                      ❌
+                                    </button>
+
+                                    <div style={{fontSize:'2rem', marginBottom:'5px'}}>📄</div>
+                                    <p style={{fontWeight:'bold', margin:'5px 0', fontSize:'0.9rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{doc.name}</p>
+                                    
+                                    <a href={`${API_BASE}${doc.url}`} target="_blank" rel="noreferrer" style={{color:'#007bff', fontSize:'0.85rem', textDecoration:'none', border:'1px solid #007bff', padding:'2px 8px', borderRadius:'4px', display:'inline-block', marginTop:'5px'}}>
+                                        Download
+                                    </a>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{textAlign:'center', padding:'30px', color:'#999', border:'1px dashed #ccc', borderRadius:'10px'}}>
+                            No documents uploaded yet.
+                        </div>
+                    )}
+              </div>
+            )}
+
           </div>
         </div>
       )}

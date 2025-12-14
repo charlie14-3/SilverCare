@@ -16,4 +16,57 @@ client/build
 .DS_Store
 
 
-https://localhost:5001
+http://localhost:5001
+
+
+
+To switch back to running everything locally on your computer, you need to point your Frontend back to your Local Backend instead of the Render Cloud Backend.
+
+Here are the 3 steps to switch back:
+
+Step 1: Update Frontend Code (client/src/pages/Dashboard.jsx)
+You need to replace the live Render URL with your local server address.
+
+Open client/src/pages/Dashboard.jsx.
+
+Find & Replace all instances of your Render URL.
+
+Find: https://silvercare-api.onrender.com
+
+Replace with: http://localhost:5001
+
+Save the file.
+
+(Note: Do NOT push this change to GitHub, or your live website will break. Only keep this change on your computer while testing).
+
+Step 2: Handle the Telegram Bot Conflict ⚠️
+This is important. You now have the bot running on Render (Live). If you start it on Localhost too, Telegram will detect two servers trying to control the same bot and will give you the ETELEGRAM: 409 Conflict error.
+
+Option A: Ignore the Error (Easiest) If you are only working on the React Frontend (design, buttons, charts), you can ignore the bot error in your local terminal. The React app will still work fine.
+
+Option B: Stop Render Temporarily (Cleanest) If you need to test the Bot specifically:
+
+Go to the Render Dashboard.
+
+Click on your Backend Service (silvercare-api).
+
+Click "Suspend" (Pause).
+
+Now run your local server. The bot will work perfectly locally. (Remember to "Resume" Render when you are done).
+
+Step 3: Run the Servers
+Open two terminals in VS Code:
+
+Terminal 1 (Backend):
+
+Bash
+
+cd server
+node index.js
+Terminal 2 (Frontend):
+
+Bash
+
+cd client
+npm run dev
+Now open http://localhost:5173 in your browser. You are back to local development!

@@ -1,369 +1,438 @@
-/* Dashboard Container */
+/* --- GLOBAL FONTS & RESET --- */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #f8f9fa; /* Light tone background */
+  color: #1a1a1a;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- DASHBOARD CONTAINER --- */
 .dashboard-container {
   padding: 2rem;
-  /* changed from fixed width: 85rem to max-width so it shrinks on phones */
-  max-width: 1200px; 
-  width: 95%;
+  width: 95vw;
   margin: 0 auto;
 }
 
-/* Header */
+/* --- HEADER --- */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 3rem;
-  flex-wrap: wrap; /* Allows wrapping on small screens */
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0; /* Subtle separation */
+  flex-wrap: wrap;
   gap: 1rem;
 }
 
 .dashboard-header h1 {
-  color: #333;
-  font-size: 2rem;
+  color: #111; /* Dark professional text */
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -1px;
   margin: 0;
 }
 
 .logout-btn {
   padding: 0.8rem 1.5rem;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 6px;
+  background: transparent;
+  color: #333;
+  border: 1px solid #333;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .logout-btn:hover {
-  background: #c82333;
-}
-
-/* Form Section */
-.form-card {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 10px;
-  margin-bottom: 3rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border: 1px solid #e9ecef;
-}
-
-.form-card h3 {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  color: #495057;
-}
-
-.nurse-form {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap; /* Allows inputs to stack */
-}
-
-.input-field {
-  flex: 1;
-  min-width: 200px; /* Prevents inputs from getting too small */
-  padding: 0.8rem 1rem;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  font-size: 1rem;
-  outline: none;
-}
-
-.input-field:focus {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-}
-
-.add-btn {
-  padding: 0.8rem 2rem;
-  background: #28a745;
+  background: #333;
   color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  font-weight: 600;
-  white-space: nowrap; /* Prevents text breaking */
 }
 
-.add-btn:hover {
-  background: #218838;
-}
-
-/* Nurse Grid List */
-.nurse-grid {
-  display: grid;
-  /* Adjusted min-width to 280px for smaller phones */
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-}
-
-.nurse-card {
-  background: white;
-  border-radius: 10px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  border: 1px solid #e9ecef;
-  transition: box-shadow 0.2s;
-}
-
-.nurse-card:hover {
-  box-shadow: 0 8px 16px rgba(0,0,0,0.08);
-}
-
-.nurse-header h2 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.4rem;
-  color: #343a40;
-}
-
-.phone-text {
-  color: #868e96;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.divider {
-  border: 0;
-  border-top: 1px solid #f1f3f5;
-  margin: 1.5rem 0;
-}
-
-/* Status Indicators */
-.status-active {
-  color: #28a745;
-  font-weight: 600;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-.status-inactive {
-  color: #adb5bd;
-  font-style: italic;
-  font-size: 0.9rem;
-}
-
-.location-tag {
-  display: inline-block;
-  background: #e9ecef;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  color: #495057;
-  margin-top: 5px;
-}
-
-/* Modal Overlay */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 10px; /* Padding for mobile edges */
-}
-
-/* Modal Box */
-.modal-content {
-  background: white;
+/* --- COMMON CARD STYLE --- */
+.form-card, .nurse-card, .analytics-card {
+  background: #ffffff;
   padding: 2rem;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 800px;
-  position: relative;
-  max-height: 90vh; /* Taller on mobile */
-  overflow-y: auto;
+  border-radius: 16px; /* More rounded, modern look */
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05); /* Soft, premium shadow */
+  border: 1px solid #f0f0f0;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.close-modal-btn {
-  position: absolute;
-  top: 15px; right: 15px;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #666;
-  z-index: 10;
-}
-
-/* History Table */
-.history-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-
-.history-table th, .history-table td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-  text-align: left;
-}
-
-.history-table th {
-  background: #f8f9fa;
-  color: #555;
-  font-size: 0.9rem;
-}
-
-/* Search Bar */
-.search-bar {
-  width: 100%;
-  padding: 15px;
-  margin-bottom: 25px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  background-color: #f8f9fa;
-  outline: none;
-  transition: border 0.2s;
-  box-sizing: border-box; /* Ensures padding doesn't overflow width */
-}
-
-.search-bar:focus {
-  border-color: #333;
-  background-color: #fff;
-  color: #333;
-}
-
-/* --- Analytics Section --- */
+/* --- ANALYTICS SECTION --- */
 .analytics-container {
   display: flex;
-  gap: 20px;
-  margin-bottom: 30px;
-  flex-wrap: wrap; /* Wrap cards on mobile */
+  gap: 25px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+
 }
 
 .analytics-card {
   flex: 1;
-  min-width: 250px; /* Cards won't get too squished */
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
+  min-width: 250px;
+  padding: 25px;
+
 }
 
 .analytics-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px -12px rgba(0,0,0,0.1);
 }
 
 .analytics-card h3 {
-  margin: 0 0 10px 0;
+  margin: 0 0 15px 0;
   font-size: 0.9rem;
   color: #666;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  font-weight: 600;
 }
 
 .analytics-value {
   margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #333;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #111;
 }
 
-.card-green { border-left: 5px solid #28a745; }
+/* Analytics Accents (Subtle side borders) */
+.card-green { border-left: 4px solid #28a745; }
 .text-green { color: #28a745; }
-.card-red { border-left: 5px solid #dc3545; }
+.card-red { border-left: 4px solid #dc3545; }
 .text-red { color: #dc3545; }
 
-/* --- CALENDAR STYLES --- */
+
+/* --- FORM SECTION --- */
+.form-card {
+  margin-bottom: 40px;
+}
+
+.form-card h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #111;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.form-card p {
+  color: #666;
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+
+.nurse-form {
+  display: flex;
+
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.input-field {
+  flex: 1;
+  color: black;
+
+  min-width: 220px;
+  padding: 1rem 1.2rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #f8f9fa; /* Slightly off-white input background */
+}
+
+.input-field:focus {
+  border-color: #333;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+}
+
+.add-btn {
+  padding: 1rem 2.5rem;
+  background: #111; /* Dark professional button */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.add-btn:hover {
+  background: #333;
+  transform: translateY(-2px);
+}
+
+
+/* --- SEARCH BAR --- */
+.search-bar {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  margin-bottom: 30px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 1rem;
+  background-color: #ffffff;
+  outline: none;
+  transition: all 0.2s;
+  box-shadow: 0 5px 15px -5px rgba(0,0,0,0.03);
+}
+
+.search-bar:focus {
+  border-color: #333;
+  box-shadow: 0 5px 20px -5px rgba(0,0,0,0.08);
+}
+
+
+/* --- NURSE GRID & CARDS --- */
+.nurse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 25px;
+}
+
+.nurse-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px -12px rgba(0,0,0,0.1);
+  border-color: #e0e0e0;
+}
+
+.nurse-header {
+  flex: 1;
+}
+
+.nurse-header h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.phone-text {
+  color: #666;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: background 0.2s;
+  color: #999;
+}
+
+.btn-icon:hover {
+  background: #f0f0f0;
+  color: #dc3545;
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid #f0f0f0;
+  margin: 1.5rem 0;
+}
+
+/* Status & Buttons */
+.view-btn { /* New class for the "View Attendance" button */
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  background: transparent;
+  color: #111;
+  border: 1px solid #111;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.view-btn:hover {
+  background: #111;
+  color: white;
+}
+
+/* ========================================= */
+/* 7. CALENDAR OVERRIDES */
+/* ========================================= */
 .react-calendar {
   width: 100%;
   max-width: 100%;
   background: white;
-  border: 1px solid #a0a096;
-  font-family: Arial, Helvetica, sans-serif;
-  line-height: 1.125em;
-  border-radius: 8px;
-  border: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border: 1px solid #e0e0e0;
+  font-family: inherit;
+  border-radius: 12px;
+  box-shadow: none;
   margin-bottom: 20px;
+  padding: 10px;
+  color: #000 !important; /* Forces all text inside calendar to be black */
 }
 
+/* Month/Year Title at the top */
 .react-calendar__navigation button {
-  color: #333;
   min-width: 44px;
   background: none;
-  font-size: 16px;
-  margin-top: 8px;
-  font-weight: bold;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #000 !important; /* Black text for buttons */
 }
 
+/* Weekday names (Mon, Tue, Wed...) */
+.react-calendar__month-view__weekdays {
+  color: #000 !important;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+
+/* Remove default underline from weekdays if present */
+.react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+
+/* Individual Day Tiles */
 .react-calendar__tile {
-  max-width: 100%;
-  color: black;
   padding: 15px 6px;
-  background: none;
-  text-align: center;
-  line-height: 16px;
-  border-radius: 6px;
   font-size: 0.9rem;
+  border-radius: 8px;
+  color: #000 !important; /* Black numbers */
 }
 
-.react-calendar__tile:enabled:hover,
-.react-calendar__tile:enabled:focus {
-  background-color: #f0f0f0;
+/* Weekend Dates (Sat/Sun) usually default to red, let's keep them dark or red */
+.react-calendar__month-view__days__day--weekend {
+  color: #d10000 !important; /* Optional: Make weekends red */
 }
 
+.react-calendar__tile:enabled:hover {
+  background-color: #f8f9fa;
+  color: #000 !important;
+}
+
+/* Selected Date (Black Background, White Text) */
+.react-calendar__tile--active {
+  background: #111 !important;
+  color: white !important; 
+}
+
+.react-calendar__tile--active:enabled:hover,
+.react-calendar__tile--active:enabled:focus {
+  background: #111 !important;
+  color: white !important;
+}
+
+/* Custom Green Dot for Attendance */
 .present-date {
   background: #d4edda !important;
-  color: #155724;
+  color: #155724 !important; /* Dark Green text */
   font-weight: bold;
-  position: relative;
 }
 
 .present-date::after {
   content: '✔';
   display: block;
   font-size: 10px;
-  margin-top: 2px;
 }
 
-.react-calendar__tile--active {
-  background: #333 !important;
-  color: white !important;
+/* --- MODAL --- */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6); /* Slightly darker overlay */
+  backdrop-filter: blur(5px); /* Blur effect for premium feel */
+  display: flex;
+  
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
 }
 
-/* ========================================= */
-/* MOBILE RESPONSIVE QUERIES */
-/* ========================================= */
+.modal-content {
+  background: #ffffff;
+  padding: 2.5rem;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 900px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+}
 
+.close-modal-btn {
+  position: absolute;
+  top: 20px; right: 20px;
+  background: #f0f0f0;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #333;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+
+.close-modal-btn:hover {
+  background: #e0e0e0;
+}
+
+.rate-text {
+  font-size: 0.85rem;
+  color: #555;
+  margin-top: 5px;
+  font-weight: 500;
+  background-color: #f1f3f5; /* Subtle grey badge background */
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+
+/* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
   .dashboard-container {
-    padding: 1rem;
+    padding: 1.5rem;
     width: 100%;
   }
 
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 15px;
+    gap: 1rem;
+  }
+  
+  .logout-btn {
+      width: 100%;
+      text-align: center;
   }
 
-  .analytics-container {
+  .analytics-container, .nurse-form {
     flex-direction: column;
   }
   
-  .nurse-form {
-    flex-direction: column;
-  }
-  
-  .add-btn {
-    width: 100%;
+  .analytics-card, .input-field, .add-btn {
+      width: 100%;
+      min-width: 0; /* Reset min-width so they don't overflow */
   }
 
   .modal-content {
-    padding: 1rem;
-    width: 95%;
+    padding: 1.5rem;
   }
   
-  /* Make modal flex items stack */
-  .modal-content > div {
+  /* Stack modal content vertically on mobile */
+  .modal-content > div[style*="display:flex"] {
     flex-direction: column;
+  }
+  
+  .modal-content > div > div {
+      min-width: 100% !important; /* Force full width */
   }
 }

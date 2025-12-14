@@ -1,158 +1,188 @@
 /* client/src/css/Home.css */
 
-/* --- GLOBAL RESET --- */
+/* --- GLOBAL RESET (Dark Mode) --- */
 body {
   margin: 0;
   padding: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #f8f9fa;
-  color: #1a1a1a;
-  overflow-x: hidden; /* Prevents side scrolling */
+  background-color: #000000; /* BLACK BACKGROUND */
+  color: #ffffff; /* WHITE TEXT */
+  overflow-x: hidden;
 }
 
-/* --- MAIN CONTAINER (Fixes the height issue) --- */
+/* --- MAIN CONTAINER --- */
 .container {
+  position: relative;
   min-height: 100vh;
-  width: 100vw;      /* Forces it to be at least the height of the screen */
-  display: flex;          /* Enables Flexbox layout */
-  flex-direction: column; /* Stacks items vertically */
+  display: flex;
+  flex-direction: column;
+  background-color: #000000; /* Ensure container is black */
+  overflow: hidden; 
+  width: 100vw;
 }
 
-/* --- NAVBAR --- */
+/* --- LAYERING --- */
+.particles-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: auto;
+}
+
+.content-layer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  pointer-events: none;
+}
+
+.content-layer * {
+  pointer-events: auto;
+}
+
+/* --- NAVBAR (Dark Glass) --- */
 nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 5%;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.8); /* Dark semi-transparent */
   backdrop-filter: blur(10px);
   position: sticky;
   top: 0;
   z-index: 1000;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.1); /* Subtle white border */
 }
 
 .logo {
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: -1px;
-  color: #000;
+  color: #fff; /* White Logo */
   margin: 0;
 }
 
 .loginBtn {
   background: transparent;
-  color: #333;
+  color: #fff;
   padding: 0.6rem 1.5rem;
   cursor: pointer;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #333;
   border-radius: 8px;
   font-weight: 600;
   transition: all 0.2s;
 }
 
 .loginBtn:hover {
-  background: #000;
-  color: white;
-  border-color: #000;
+  background: #fff;
+  color: #000;
+  border-color: #fff;
 }
 
 /* --- HERO SECTION --- */
 .hero {
-  flex: 1; /* Pushes footer down if content is short */
+  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Centers content vertically */
+  justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 6rem 2rem; /* Big spacing */
-  background: radial-gradient(circle at center, #ffffff 0%, #f4f4f5 100%);
+  padding: 6rem 2rem;
+  background: transparent; 
 }
 
 .title {
-  font-size: clamp(2.5rem, 5vw, 4.5rem); /* Responsive font size */
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
   font-weight: 800;
-  color: #111;
+  color: #fff;
   margin: 0 0 1.5rem 0;
   line-height: 1.1;
   letter-spacing: -2px;
 }
 
+/* Gradient Text for "Agencies" - Silver/Blue style */
 .title span {
-  background: linear-gradient(45deg, #333, #666);
+  background: linear-gradient(45deg, #a0a0a0, #ffffff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
   font-size: 1.25rem;
-  color: #666;
+  color: #a0a0a0; /* Light Grey for subtitle */
   max-width: 600px;
   margin: 0 auto 3rem auto;
   line-height: 1.6;
 }
 
 .ctaBtn {
-  background-color: #000;
-  color: #fff;
+  background-color: #fff; /* White Button */
+  color: #000; /* Black Text */
   padding: 1.2rem 3.5rem;
   font-size: 1.1rem;
   font-weight: 600;
   border: none;
   border-radius: 50px;
   cursor: pointer;
-  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3);
+  box-shadow: 0 0 20px rgba(255,255,255,0.2); /* Glow effect */
   transition: transform 0.2s;
 }
 
 .ctaBtn:hover {
   transform: translateY(-3px);
+  box-shadow: 0 0 30px rgba(255,255,255,0.4);
 }
 
-/* --- FEATURES GRID --- */
+/* --- FEATURES GRID (Dark) --- */
 .grid {
   display: flex;
   justify-content: center;
   gap: 2rem;
   padding: 4rem 5%;
   flex-wrap: wrap;
-  background: white; /* Separate section color */
+  background: #000; /* Black background */
 }
 
 .card {
-  background: #fff;
+  background: #111; /* Very Dark Grey Cards */
   padding: 2.5rem;
   border-radius: 16px;
   width: 300px;
   text-align: left;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+  border: 1px solid #333; /* Dark border */
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
   transition: transform 0.2s;
 }
 
 .card:hover {
   transform: translateY(-5px);
-  border-color: #000;
+  border-color: #fff; /* White border on hover */
 }
 
 .card h3 {
   margin-top: 0;
   font-size: 1.2rem;
-  color: #111;
+  color: #fff;
 }
 
 .card p {
-  color: #666;
+  color: #888; /* Grey text */
   line-height: 1.5;
 }
 
-/* --- FOOTER --- */
+/* --- FOOTER (Dark) --- */
 .footer {
   text-align: center;
   padding: 2rem;
-  border-top: 1px solid #eee;
-  color: #999;
+  border-top: 1px solid #333;
+  color: #666;
   font-size: 0.9rem;
-  background: #fff;
-  margin-top: auto; /* Ensures it stays at the bottom */
+  background: #000;
+  margin-top: auto;
 }
