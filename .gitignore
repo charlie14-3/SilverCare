@@ -16,7 +16,7 @@ client/build
 .DS_Store
 
 
-http://localhost:5001
+http://ilvercare-api.onrender.com
 
 
 
@@ -33,7 +33,7 @@ Find & Replace all instances of your Render URL.
 
 Find: https://silvercare-api.onrender.com
 
-Replace with: http://localhost:5001
+Replace with: http://ilvercare-api.onrender.com
 
 Save the file.
 

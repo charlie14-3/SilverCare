@@ -8,7 +8,7 @@ import 'react-calendar/dist/Calendar.css';
 import '../css/dashboard.css';
 
 // Configure API URL (Switch to your Render URL when deploying)
-const API_BASE = "http://localhost:5001";
+const API_BASE = "http://ilvercare-api.onrender.com";
 
 function Dashboard() {
   const [user, setUser] = useState(null);
