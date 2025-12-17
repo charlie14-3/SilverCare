@@ -6,7 +6,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const fs = require('fs');
 const path = require('path');
 const request = require('request');
-const multer = require('multer'); // <--- New Dependency
+const multer = require('multer');
 
 const app = express();
 app.use(cors());
@@ -14,14 +14,14 @@ app.use(express.json());
 // Serve uploads folder publicly so frontend can access images/docs
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- MULTER CONFIGURATION (For Document Locker) ---
+// --- MULTER CONFIGURATION (For Document Locker & Profile Pics) ---
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
     cb(null, 'uploads/')
   },
   filename: function (req, file, cb) {
-    // Save as: timestamp-filename.pdf
+    // Save as: timestamp-filename.jpg
     cb(null, Date.now() + '-' + file.originalname)
   }
 });
@@ -29,11 +29,10 @@ const upload = multer({ storage: storage });
 
 // --- TELEGRAM BOT SETUP ---
 const token = process.env.TELEGRAM_TOKEN; 
-// Initialize bot only if token exists (prevents crashes if env is missing)
+// Initialize bot only if token exists
 const bot = token ? new TelegramBot(token, { polling: true }) : null;
 
 if (bot) {
-    // Prevent server crash on connection errors (Common in India)
     bot.on('polling_error', (error) => {
         console.log("⚠️ Telegram Connection Error (polling):", error.code);
     });
@@ -54,9 +53,13 @@ const NurseSchema = new mongoose.Schema({
   ownerId: { type: String, required: true },
   name: String,
   phone: String,
-  dailyRate: { type: Number, default: 0 }, // For Payroll
+  profilePicUrl: { type: String, default: "" },
+  dailyRate: { type: Number, default: 0 },
   telegramChatId: String,
   
+  // ✅ NEW FIELD: Store Profile Picture Link
+  profilePicUrl: { type: String, default: "" },
+
   // Document Locker Array
   documents: [{
     name: String,
@@ -83,13 +86,27 @@ app.get('/api/nurses', async (req, res) => {
   res.json(nurses);
 });
 
-// 2. ADD Nurse
-app.post('/api/nurses', async (req, res) => {
+// 2. ADD Nurse (✅ UPDATED for Profile Pic Upload)
+// ✅ REPLACE YOUR EXISTING POST ROUTE WITH THIS:
+app.post('/api/nurses', upload.single('profilePic'), async (req, res) => {
   try {
     const { name, phone, ownerId, dailyRate } = req.body;
+    let profilePicUrl = "";
+
+    // If an image was uploaded, save the path
+    if (req.file) {
+        profilePicUrl = `/uploads/${req.file.filename}`;
+    }
+
     let nurse = await Nurse.findOne({ phone, ownerId });
     if (!nurse) {
-        nurse = new Nurse({ name, phone, ownerId, dailyRate });
+        nurse = new Nurse({ 
+            name, 
+            phone, 
+            ownerId, 
+            dailyRate,
+            profilePicUrl // Save URL to database
+        });
         await nurse.save();
     }
     res.json(nurse);
@@ -102,7 +119,6 @@ app.post('/api/nurses', async (req, res) => {
 app.delete('/api/nurses/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    // Removed ownerId check specifically to allow cleaning up old bad data
     await Nurse.findByIdAndDelete(id);
     res.json({ message: "Deleted" });
   } catch (error) {
@@ -110,7 +126,24 @@ app.delete('/api/nurses/:id', async (req, res) => {
   }
 });
 
-// 4. UPLOAD DOCUMENT (New Feature)
+// 4. UPDATE Nurse
+app.put('/api/nurses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, dailyRate } = req.body;
+    
+    const updatedNurse = await Nurse.findByIdAndUpdate(id, 
+      { name, phone, dailyRate },
+      { new: true } 
+    );
+    
+    res.json(updatedNurse);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5. UPLOAD DOCUMENT
 app.post('/api/nurses/:id/documents', upload.single('file'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -134,9 +167,7 @@ app.post('/api/nurses/:id/documents', upload.single('file'), async (req, res) =>
   }
 });
 
-// ... existing upload route ...
-
-// 5. DELETE DOCUMENT (New Feature)
+// 6. DELETE DOCUMENT
 app.delete('/api/nurses/:nurseId/documents/:docId', async (req, res) => {
   try {
     const { nurseId, docId } = req.params;
@@ -144,46 +175,35 @@ app.delete('/api/nurses/:nurseId/documents/:docId', async (req, res) => {
     
     if (!nurse) return res.status(404).json({ error: "Nurse not found" });
 
-    // 1. Find the document to get the filename
     const doc = nurse.documents.id(docId); 
     if (!doc) return res.status(404).json({ error: "Document not found" });
 
-    // 2. Delete file from 'uploads' folder
-    // Extract filename from URL (e.g., "/uploads/123.pdf" -> "uploads/123.pdf")
     const filePath = path.join(__dirname, 'uploads', path.basename(doc.url));
-    
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath); // Delete file from disk
     }
 
-    // 3. Remove from Database
-    nurse.documents.pull(docId); // Remove subdocument
+    nurse.documents.pull(docId);
     await nurse.save();
-
-    res.json(nurse); // Send back updated nurse object
+    res.json(nurse);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// ... existing Telegram Logic ...
-
 // --- TELEGRAM LOGIC ---
 
 if (bot) {
-    // A. Handle /start
     bot.onText(/\/start/, (msg) => {
       const chatId = msg.chat.id;
       bot.sendMessage(chatId, "Welcome to Silver Case! 🏥\nPlease reply with your **Phone Number** (just digits) to link your account.");
     });
 
-    // B. Handle Text (Phone Number Linking)
     bot.on('message', async (msg) => {
       const chatId = msg.chat.id;
       if (msg.text && !msg.text.startsWith('/')) {
         const text = msg.text.trim();
-        // Check if text looks like a phone number (10+ digits)
         if (text.length >= 10 && /^\d+$/.test(text)) {
             const nurse = await Nurse.findOne({ phone: text });
             if (nurse) {
@@ -197,13 +217,12 @@ if (bot) {
       }
     });
 
-    // C. Handle Photos (Selfie Attendance)
     bot.on('photo', async (msg) => {
       const chatId = msg.chat.id;
       const nurse = await Nurse.findOne({ telegramChatId: chatId });
       
       if (nurse) {
-        const photoId = msg.photo[msg.photo.length - 1].file_id; // Best quality
+        const photoId = msg.photo[msg.photo.length - 1].file_id;
         const fileLink = await bot.getFileLink(photoId);
 
         const filename = `selfie_${Date.now()}.jpg`;
@@ -220,22 +239,18 @@ if (bot) {
       }
     });
 
-    // D. Handle Location (GPS Attendance)
     bot.on('location', async (msg) => {
       const chatId = msg.chat.id;
       const nurse = await Nurse.findOne({ telegramChatId: chatId });
 
       if (nurse) {
         const loc = `${msg.location.latitude},${msg.location.longitude}`;
-        
-        // Smart Logic: Merge location with recent photo log if exists
         const lastLog = nurse.logs[nurse.logs.length - 1];
-        if (lastLog && !lastLog.location && (Date.now() - new Date(lastLog.time) < 300000)) { // 5 min window
+        if (lastLog && !lastLog.location && (Date.now() - new Date(lastLog.time) < 300000)) { 
             lastLog.location = loc;
         } else {
             nurse.logs.push({ location: loc });
         }
-        
         await nurse.save();
         bot.sendMessage(chatId, "📍 Location Received! Attendance Marked. ✅");
       }
